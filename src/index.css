@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary-light: #4ade80;
+  --color-primary: #16a34a;
+  --color-primary-dark: #15803d;
+  
+  --color-secondary-light: #fde047;
+  --color-secondary: #eab308;
+  --color-secondary-dark: #ca8a04;
+  
+  --color-accent-light: #f87171;
+  --color-accent: #ef4444;
+  --color-accent-dark: #b91c1c;
+  
+  --font-family-tamil: "Inter", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply antialiased bg-gray-50 text-gray-900;
+  }
+}
+
+.farmer-touch {
+  @apply active:scale-95 transition-transform;
+}
+
+/* Custom Scrollbar for modern look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
+}
+@layer components {
+  .print-only {
+    display: none;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-only, .print-only * {
+    visibility: visible;
+  }
+  .print-only {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  /* Hide standard browser elements */
+  @page {
+    margin: 0;
+    size: auto;
+  }
+  header, footer, nav, button {
+    display: none !important;
+  }
+}
