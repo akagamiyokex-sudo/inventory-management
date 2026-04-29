@@ -2,14 +2,17 @@ import React from 'react';
 import { Plus, Minus, Info } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-const ProductCard = ({ product, addToCart, cartQuantity }) => {
+const ProductCard = ({ product, addToCart, decrementFromCart, cartQuantity }) => {
   const { lang, t } = useLanguage();
 
   const isLowStock = product.stock > 0 && product.stock <= 10;
   const isOutOfStock = product.stock <= 0;
 
   return (
-    <div className={`relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border-2 ${cartQuantity > 0 ? 'border-primary' : 'border-transparent'}`}>
+    <div 
+      onClick={() => !isOutOfStock && addToCart(product)}
+      className={`relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98] border-2 ${cartQuantity > 0 ? 'border-primary' : 'border-transparent'}`}
+    >
       <div className="aspect-square w-full relative group">
         <img
           src={product.image_url || 'https://images.unsplash.com/photo-1506484334406-f11215238df2?auto=format&fit=crop&q=80&w=400'}
@@ -49,16 +52,32 @@ const ProductCard = ({ product, addToCart, cartQuantity }) => {
             )}
           </div>
 
-          <button
-            onClick={() => !isOutOfStock && addToCart(product)}
-            disabled={isOutOfStock}
-            className={`farmer-touch p-3 rounded-xl flex items-center justify-center ${isOutOfStock
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-primary text-white hover:bg-primary-dark shadow-lg shadow-primary/20'
-              }`}
-          >
-            <Plus size={24} />
-          </button>
+          <div className="flex items-center gap-1">
+            {cartQuantity > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  decrementFromCart(product.id);
+                }}
+                className="farmer-touch p-2 rounded-lg flex items-center justify-center bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                <Minus size={20} />
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                !isOutOfStock && addToCart(product);
+              }}
+              disabled={isOutOfStock}
+              className={`farmer-touch p-2 rounded-lg flex items-center justify-center ${isOutOfStock
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-primary text-white hover:bg-primary-dark shadow-md shadow-primary/20'
+                }`}
+            >
+              <Plus size={20} />
+            </button>
+          </div>
         </div>
       </div>
 

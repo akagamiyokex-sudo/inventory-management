@@ -105,6 +105,19 @@ const Sales = () => {
     });
   };
 
+  const decrementFromCart = (productId) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === productId);
+      if (!existing) return prev;
+      if (existing.quantity === 1) {
+        return prev.filter(item => item.id !== productId);
+      }
+      return prev.map(item =>
+        item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
+      );
+    });
+  };
+
   const removeFromCart = (id) => {
     setCart(prev => prev.filter(item => item.id !== id));
   };
@@ -214,6 +227,7 @@ const Sales = () => {
                 key={product.id} 
                 product={product} 
                 addToCart={addToCart}
+                decrementFromCart={decrementFromCart}
                 cartQuantity={cart.find(c => c.id === product.id)?.quantity || 0}
               />
             ))}
