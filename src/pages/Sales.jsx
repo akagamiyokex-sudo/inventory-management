@@ -213,15 +213,15 @@ const Sales = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {loading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="aspect-square bg-gray-200 animate-pulse rounded-2xl"></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="aspect-square bg-gray-200 animate-pulse rounded-xl sm:rounded-2xl"></div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
             {filteredProducts.map(product => (
               <ProductCard 
                 key={product.id} 
@@ -240,10 +240,15 @@ const Sales = () => {
         {cart.length > 0 && !showCart && (
           <button
             onClick={() => setShowCart(true)}
-            className="fixed bottom-20 right-6 bg-secondary text-white p-4 rounded-full shadow-2xl flex items-center gap-2 animate-bounce cursor-pointer z-50"
+            className="fixed bottom-20 right-4 bg-secondary text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-2 animate-bounce cursor-pointer z-50 farmer-touch"
           >
-            <ShoppingCart size={24} />
-            <span className="font-black">₹{totalAmount.toFixed(2)}</span>
+            <div className="relative">
+              <ShoppingCart size={24} />
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-secondary font-black">
+                {cart.reduce((s, i) => s + i.quantity, 0)}
+              </span>
+            </div>
+            <span className="font-black text-lg">₹{totalAmount.toFixed(0)}</span>
           </button>
         )}
       </div>
@@ -251,14 +256,14 @@ const Sales = () => {
       {/* Cart Sidebar/Modal */}
       {(showCart || (cart.length > 0 && true)) && (
         <div className={`fixed inset-0 z-[60] md:relative md:inset-auto md:z-10 ${showCart ? 'flex' : 'hidden md:flex'}`}>
-          <div className="absolute inset-0 bg-black/50 md:hidden" onClick={() => setShowCart(false)}></div>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setShowCart(false)}></div>
           
-          <div className={`absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl flex flex-col md:fixed md:top-16 md:right-0 md:h-[calc(100vh-64px)] md:w-96 transition-transform duration-300 ${showCart ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center text-primary">
-              <h2 className="text-xl font-black flex items-center gap-2">
-                <ShoppingCart /> {t('cart')}
+          <div className={`absolute right-0 top-0 bottom-0 w-full max-w-[85%] sm:max-w-md bg-white shadow-2xl flex flex-col md:fixed md:top-16 md:right-0 md:h-[calc(100vh-64px)] md:w-80 lg:w-96 transition-transform duration-300 ease-out ${showCart ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+              <h2 className="text-xl font-black flex items-center gap-2 text-primary">
+                <ShoppingCart className="w-6 h-6" /> {t('cart')}
               </h2>
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2">
                 {lastSale && (
                   <button 
                     onClick={() => window.print()} 
@@ -268,44 +273,46 @@ const Sales = () => {
                     <Printer size={20} />
                   </button>
                 )}
-                <button onClick={() => setShowCart(false)} className="md:hidden p-2">
-                  <X />
+                <button onClick={() => setShowCart(false)} className="md:hidden p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={24} />
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/50">
               {cart.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
-                  <ShoppingCart size={48} className="mx-auto mb-4 opacity-20" />
-                  <p className="font-bold">{t('empty_cart')}</p>
+                <div className="text-center py-16 text-gray-300">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ShoppingCart size={32} className="opacity-20" />
+                  </div>
+                  <p className="font-bold text-gray-400">{t('empty_cart')}</p>
                 </div>
               ) : (
                 cart.map(item => (
-                  <div key={item.id} className="flex gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <div key={item.id} className="flex gap-3 sm:gap-4 bg-white p-2.5 sm:p-3 rounded-xl border border-gray-100 shadow-sm transition-all">
                     <img 
                       src={item.image_url || 'https://images.unsplash.com/photo-1506484334406-f11215238df2?auto=format&fit=crop&q=80&w=400'} 
                       alt="" 
-                      className="w-16 h-16 rounded-lg object-cover" 
+                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover shadow-inner" 
                       onError={(e) => {
                         e.target.src = 'https://images.unsplash.com/photo-1506484334406-f11215238df2?auto=format&fit=crop&q=80&w=400';
                         e.target.onerror = null;
                       }}
                     />
-                    <div className="flex-1">
-                      <h4 className="font-bold text-sm">{lang === 'en' ? item.name_en : item.name_ta}</h4>
-                      <p className="text-primary font-black">₹{item.price}</p>
-                      <div className="flex items-center gap-3 mt-2">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-sm truncate">{lang === 'en' ? item.name_en : item.name_ta}</h4>
+                      <p className="text-primary font-black text-sm">₹{item.price}</p>
+                      <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2">
                         <button 
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold"
+                          onClick={() => decrementFromCart(item.id)}
+                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center font-bold active:bg-gray-100 transition-colors"
                         >
                           -
                         </button>
-                        <span className="font-bold">{item.quantity}</span>
+                        <span className="font-bold text-sm min-w-[20px] text-center">{item.quantity}</span>
                         <button 
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold"
+                          onClick={() => addToCart(item)}
+                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center font-bold active:bg-gray-100 transition-colors"
                         >
                           +
                         </button>
@@ -313,9 +320,9 @@ const Sales = () => {
                     </div>
                     <button 
                       onClick={() => removeFromCart(item.id)}
-                      className="text-gray-300 hover:text-accent transition-colors self-start"
+                      className="text-gray-300 hover:text-accent transition-colors self-start p-1"
                     >
-                      <Trash2 size={20} />
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 ))
@@ -323,60 +330,62 @@ const Sales = () => {
             </div>
 
             {cart.length > 0 && (
-              <div className="px-6 py-4 border-t border-gray-50">
-                <p className="text-xs font-bold text-gray-400 uppercase mb-3">{t('payment_method')}</p>
+              <div className="px-4 py-4 border-t border-gray-100 bg-white">
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-2 tracking-widest">{t('payment_method')}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {paymentMethods.map(method => (
                     <button
                       key={method.id}
                       onClick={() => setPaymentMethod(method.id)}
-                      className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all gap-1 ${
+                      className={`flex flex-col items-center justify-center py-2 sm:py-3 rounded-xl border-2 transition-all gap-1 ${
                         paymentMethod === method.id 
-                          ? `${method.color.split(' ')[2]} ${method.color.split(' ')[0]} border-current` 
-                          : 'border-gray-100 text-gray-400 grayscale'
+                          ? `${method.color.split(' ')[2]} ${method.color.split(' ')[0]} border-current shadow-sm` 
+                          : 'border-gray-50 text-gray-300 grayscale opacity-60'
                       }`}
                     >
-                      {method.icon}
-                      <span className="text-[10px] font-black uppercase tracking-tighter">{method.label}</span>
+                      {React.cloneElement(method.icon, { size: 18 })}
+                      <span className="text-[9px] font-black uppercase tracking-tighter">{method.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="p-6 border-t border-gray-100 bg-white space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-400 font-bold uppercase tracking-wider">{t('taxable_amount')}</span>
-                <span className="font-bold text-gray-600">₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-400 font-bold uppercase tracking-wider">{t('gst')} (5%)</span>
-                <span className="font-bold text-gray-600">₹{gstAmount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-end pt-2 border-t border-gray-50 mb-4">
-                <span className="text-gray-400 font-bold uppercase text-xs">{t('grand_total')}</span>
-                <span className="text-3xl font-black text-primary">₹{totalAmount.toFixed(2)}</span>
+            <div className="p-4 sm:p-6 border-t border-gray-100 bg-white shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+              <div className="space-y-1 sm:space-y-2 mb-3 sm:mb-4">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-400 font-bold uppercase tracking-wider">{t('taxable_amount')}</span>
+                  <span className="font-bold text-gray-600">₹{subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-gray-400 font-bold uppercase tracking-wider">{t('gst')} (5%)</span>
+                  <span className="font-bold text-gray-600">₹{gstAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-end pt-2 border-t border-gray-50">
+                  <span className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">{t('grand_total')}</span>
+                  <span className="text-2xl sm:text-3xl font-black text-primary">₹{totalAmount.toFixed(2)}</span>
+                </div>
               </div>
               
               <button
                 onClick={handleCheckout}
                 disabled={cart.length === 0 || checkoutStatus === 'loading'}
-                className={`w-full py-4 rounded-2xl font-black text-white text-lg transition-all flex items-center justify-center gap-2 ${
+                className={`w-full py-3.5 sm:py-4 rounded-xl sm:rounded-2xl font-black text-white text-base sm:text-lg transition-all flex items-center justify-center gap-2 ${
                   checkoutStatus === 'success' 
                     ? 'bg-green-500' 
                     : checkoutStatus === 'error'
                       ? 'bg-red-500'
-                      : 'bg-primary hover:bg-primary-dark shadow-xl shadow-primary/30 active:scale-95'
+                      : 'bg-primary hover:bg-primary-dark shadow-xl shadow-primary/30 active:scale-[0.98]'
                 }`}
               >
                 {checkoutStatus === 'loading' ? (
                   <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
                 ) : checkoutStatus === 'success' ? (
-                  <><CheckCircle2 /> {t('success')}</>
+                  <><CheckCircle2 size={20} /> {t('success')}</>
                 ) : checkoutStatus === 'error' ? (
                   'Error!'
                 ) : (
-                  t('checkout')
+                  <span className="flex items-center gap-2">{t('checkout')} <ArrowRight size={20} /></span>
                 )}
               </button>
             </div>
