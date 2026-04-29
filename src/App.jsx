@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 import Sales from './pages/Sales';
 import ProductManagement from './pages/ProductManagement';
 import Dashboard from './pages/Dashboard';
@@ -23,6 +24,7 @@ function App() {
             <Navbar />
             <main>
               <Routes>
+                <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 
                 <Route path="/sales" element={
@@ -62,8 +64,7 @@ function App() {
                 } />
 
                 {/* Default Redirects */}
-                <Route path="/" element={<Navigate to="/sales" replace />} />
-                <Route path="*" element={<Navigate to="/sales" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
           </div>
