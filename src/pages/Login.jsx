@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { LogIn, AlertCircle, Loader2 } from 'lucide-react';
-import { seedDatabase } from '../firebase/db';
+
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [seeding, setSeeding] = useState(false);
+
   
   const { login } = useAuth();
   const { t, toggleLanguage, lang } = useLanguage();
@@ -40,17 +40,7 @@ const Login = () => {
     }
   };
 
-  const handleSeed = async () => {
-    setSeeding(true);
-    try {
-      await seedDatabase();
-      alert('Database seeded with 36 products across all categories!');
-    } catch (err) {
-      alert('Error seeding: ' + err.message);
-    } finally {
-      setSeeding(false);
-    }
-  };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -118,21 +108,7 @@ const Login = () => {
             Switch to {lang === 'en' ? 'தமிழ்' : 'English'}
           </button>
 
-          <div className="pt-6 border-t border-gray-100 mt-4 text-center">
-             <p className="text-xs text-gray-400 mb-4">First time setup? Click below to add sample products.</p>
-             <button 
-               onClick={handleSeed}
-               disabled={seeding}
-               className="text-xs border border-gray-200 px-3 py-1.5 rounded-full text-gray-500 hover:bg-gray-50 transition-colors"
-             >
-               {seeding ? 'Seeding...' : 'Seed Sample Database'}
-             </button>
-             
-             <div className="mt-4 p-3 bg-blue-50 rounded-lg text-[10px] text-blue-800 text-left">
-               <p className="font-bold mb-1 italic underline">Note to Developer:</p>
-               <p>I cannot create Auth users via script without Firebase Admin. You must manually create one user in the Firebase Console with role "admin" in the `users` collection (Document ID = UID).</p>
-             </div>
-          </div>
+
         </div>
       </div>
     </div>
