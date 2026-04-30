@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Package, Search, Image as ImageIcon, Upload, Loader2, CheckCircle2 } from 'lucide-react';
 import { storage } from '../firebase/config';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { getProducts, createProduct, updateProduct, deleteProduct } from '../firebase/db';
+import { createProduct, updateProduct, deleteProduct, subscribeProducts } from '../firebase/db';
 import { useLanguage } from '../context/LanguageContext';
 
 const ProductManagement = () => {
@@ -21,6 +21,8 @@ const ProductManagement = () => {
     image_url: ''
   });
   const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [isCompressing, setIsCompressing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', message: string }
 
@@ -34,19 +36,12 @@ const ProductManagement = () => {
   const { t, lang } = useLanguage();
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const data = await getProducts();
+    const unsubscribe = subscribeProducts((data) => {
       setProducts(data);
-    } catch (error) {
-      showFeedback('error', 'Failed to fetch products');
-    }
-    setLoading(false);
-  };
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const showFeedback = (type, message) => {
     setFeedback({ type, message });
@@ -70,16 +65,25 @@ const ProductManagement = () => {
       });
     }
     setImageFile(null);
+    setImagePreview(product?.image_url || '');
     setIsModalOpen(true);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear image file if user starts typing a URL
+    if (name === 'image_url' && value !== '') {
+      setImageFile(null);
+      setImagePreview('');
+    }
+
     setFormData(prev => ({ 
       ...prev, 
       [name]: (name === 'price' || name === 'stock' || name === 'category' || name === 'priority') ? (value === '' ? '' : Number(value)) : value 
     }));
   };
+
 
   const compressImage = (file) => {
     return new Promise((resolve) => {
@@ -111,7 +115,8 @@ const ProductManagement = () => {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
           canvas.toBlob((blob) => {
-            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+            // Return the blob and original file name to avoid File constructor issues on some browsers
+            resolve({ blob, name: file.name, size: blob.size });
           }, 'image/jpeg', 0.7);
         };
       };
@@ -121,12 +126,24 @@ const ProductManagement = () => {
   const handleFileChange = async (e) => {
     if (e.target.files[0]) {
       const originalFile = e.target.files[0];
-      // Show immediate feedback that compression is happening if file is large
-      if (originalFile.size > 500 * 1024) {
-        showFeedback('success', 'Optimizing image...');
+      setIsCompressing(true);
+      
+      // Create temporary preview of the original for immediate feedback
+      const tempPreview = URL.createObjectURL(originalFile);
+      setImagePreview(tempPreview);
+
+      try {
+        const compressedData = await compressImage(originalFile);
+        setImageFile(compressedData); // Store the object {blob, name, size}
+        
+        // Replace temp preview with compressed version
+        const finalPreview = URL.createObjectURL(compressedData.blob);
+        setImagePreview(finalPreview);
+      } catch (err) {
+        console.error("Compression failed:", err);
+      } finally {
+        setIsCompressing(false);
       }
-      const compressed = await compressImage(originalFile);
-      setImageFile(compressed);
     }
   };
 
@@ -139,8 +156,9 @@ const ProductManagement = () => {
       let finalImageUrl = formData.image_url;
 
       if (imageFile) {
+        // imageFile is now an object: { blob, name, size }
         const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
-        const snapshot = await uploadBytes(storageRef, imageFile);
+        const snapshot = await uploadBytes(storageRef, imageFile.blob);
         finalImageUrl = await getDownloadURL(snapshot.ref);
       }
 
@@ -155,7 +173,7 @@ const ProductManagement = () => {
       }
 
       setIsModalOpen(false);
-      fetchProducts();
+      // fetchProducts() is no longer needed due to subscribeProducts
     } catch (error) {
       console.error("Error saving product:", error);
       showFeedback('error', "Error saving product: " + error.message);
@@ -169,7 +187,7 @@ const ProductManagement = () => {
       try {
         await deleteProduct(id);
         showFeedback('success', 'Product deleted!');
-        fetchProducts();
+        // fetchProducts() is no longer needed
       } catch (error) {
         console.error("Error deleting product:", error);
         showFeedback('error', 'Failed to delete product');
@@ -439,20 +457,32 @@ const ProductManagement = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    {(formData.image_url || imageFile) && (
+                    {(imagePreview || formData.image_url) && (
                       <div className="mt-4 p-2 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-gray-200 overflow-hidden">
+                        <div className="w-12 h-12 rounded-lg bg-gray-200 overflow-hidden relative">
+                          {isCompressing && (
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
+                              <Loader2 size={16} className="animate-spin text-white" />
+                            </div>
+                          )}
                           <img 
-                            src={imageFile ? URL.createObjectURL(imageFile) : (formData.image_url || 'https://images.unsplash.com/photo-1506484334406-f11215238df2?auto=format&fit=crop&q=80&w=400')} 
+                            src={imagePreview || formData.image_url || 'https://images.unsplash.com/photo-1506484334406-f11215238df2?auto=format&fit=crop&q=80&w=400'} 
                             alt="Preview" 
-                            className="w-full h-full object-cover"
+                            className={`w-full h-full object-cover transition-opacity ${isCompressing ? 'opacity-50' : 'opacity-100'}`}
                             onError={(e) => {
                               e.target.src = 'https://images.unsplash.com/photo-1506484334406-f11215238df2?auto=format&fit=crop&q=80&w=400';
                               e.target.onerror = null;
                             }}
                           />
                         </div>
-                        <span className="text-xs font-bold text-gray-500 italic">Previewing image...</span>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-primary uppercase tracking-widest">
+                            {isCompressing ? 'Compressing...' : 'Preview Ready'}
+                          </span>
+                          <span className="text-[9px] text-gray-400 italic">
+                            {imageFile ? `${(imageFile.size / 1024).toFixed(1)}KB optimized` : 'Using URL source'}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -469,13 +499,13 @@ const ProductManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={isSaving || isCompressing}
                   className={`px-10 py-3 rounded-xl font-bold text-white transition-all flex items-center gap-2 shadow-lg ${
-                    isSaving ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-primary-dark shadow-primary/20 active:scale-95'
+                    (isSaving || isCompressing) ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-primary-dark shadow-primary/20 active:scale-95'
                   }`}
                 >
                   {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                  {editingProduct ? 'Update Product' : 'Save Product'}
+                  {isSaving ? 'Saving...' : isCompressing ? 'Compressing...' : (editingProduct ? 'Update Product' : 'Save Product')}
                 </button>
               </div>
             </form>

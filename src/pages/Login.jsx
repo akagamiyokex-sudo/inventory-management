@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,11 +12,18 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const { t, toggleLanguage, lang } = useLanguage();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (user) {
+      navigate('/sales');
+    }
+  }, [user, navigate]);
+
   const handleSubmit = async (e) => {
+
     e.preventDefault();
     setError('');
     setLoading(true);

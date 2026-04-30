@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Trash2, X, CheckCircle2, CreditCard, Wallet, Banknote, Printer } from 'lucide-react';
-import { getProducts, createSale } from '../firebase/db';
+import { ShoppingCart, Trash2, X, CheckCircle2, CreditCard, Wallet, Banknote, Printer, Search, ArrowRight } from 'lucide-react';
+import { subscribeProducts, createSale } from '../firebase/db';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import ProductCard from '../components/ProductCard';
@@ -73,25 +73,19 @@ const Sales = () => {
   const [checkoutStatus, setCheckoutStatus] = useState(null); // 'loading', 'success', 'error'
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [lastSale, setLastSale] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const GST_RATE = 0.05; // 5% GST
   
   const { t, lang } = useLanguage();
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const data = await getProducts();
+    const unsubscribe = subscribeProducts((data) => {
       setProducts(data);
-    } catch (error) {
-      console.error(error);
-    }
-    setLoading(false);
-  };
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const addToCart = (product) => {
     setCart(prev => {
@@ -160,7 +154,7 @@ const Sales = () => {
       setTimeout(() => {
         window.print();
         setCart([]);
-        fetchProducts(); // Refresh stock
+        // fetchProducts() is no longer needed due to subscribeProducts
         setCheckoutStatus(null);
         setShowCart(false);
       }, 500);
@@ -185,31 +179,57 @@ const Sales = () => {
     { id: 'card', icon: <CreditCard size={20} />, label: t('card'), color: 'bg-purple-50 text-purple-600 border-purple-200' }
   ];
 
-  const filteredProducts = category === 0 
-    ? products 
-    : products.filter(p => p.category === category);
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = category === 0 || p.category === category;
+    const matchesSearch = p.name_en.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          p.name_ta.includes(searchTerm);
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="min-h-[calc(100-64px)] pb-24 md:pb-8">
       {/* Hidden Receipt for Printing */}
       <Receipt sale={lastSale} lang={lang} t={t} />
 
-      {/* Category Tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 overflow-x-auto no-scrollbar">
-        <div className="flex px-4 py-3 gap-2 min-w-max">
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setCategory(cat.id)}
-              className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
-                category === cat.id 
-                  ? 'bg-primary text-white shadow-md' 
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-              }`}
-            >
-              {cat.id === 0 ? (lang === 'en' ? 'All' : 'அனைத்தும்') : cat.name}
-            </button>
-          ))}
+      {/* Search and Category Tabs */}
+      <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder={lang === 'en' ? "Search products..." : "பொருட்களைத் தேடுக..."}
+                className="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            
+            <div className="flex gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategory(cat.id)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    category === cat.id 
+                      ? 'bg-primary text-white shadow-md' 
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}
+                >
+                  {cat.id === 0 ? (lang === 'en' ? 'All' : 'அனைத்தும்') : cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -222,15 +242,27 @@ const Sales = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-4">
-            {filteredProducts.map(product => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                addToCart={addToCart}
-                decrementFromCart={decrementFromCart}
-                cartQuantity={cart.find(c => c.id === product.id)?.quantity || 0}
-              />
-            ))}
+            {filteredProducts.length === 0 ? (
+              <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-gray-200">
+                <Search size={48} className="mx-auto mb-4 text-gray-200" />
+                <p className="text-gray-500 font-bold">
+                  {lang === 'en' ? "No products found." : "பொருட்கள் எதுவும் காணப்படவில்லை."}
+                </p>
+                <p className="text-gray-400 text-sm">
+                  {lang === 'en' ? "Try a different search term or category." : "வேறு தேடல் சொல் அல்லது வகையை முயற்சிக்கவும்."}
+                </p>
+              </div>
+            ) : (
+              filteredProducts.map(product => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  addToCart={addToCart}
+                  decrementFromCart={decrementFromCart}
+                  cartQuantity={cart.find(c => c.id === product.id)?.quantity || 0}
+                />
+              ))
+            )}
           </div>
         )}
       </div>

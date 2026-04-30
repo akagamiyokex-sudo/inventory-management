@@ -22,7 +22,8 @@ import {
   deleteDoc, 
   doc, 
   query, 
-  orderBy 
+  orderBy,
+  onSnapshot
 } from "firebase/firestore";
 import { useLanguage } from '../context/LanguageContext';
 
@@ -46,21 +47,19 @@ const VendorRetailer = () => {
   const { t, lang } = useLanguage();
 
   useEffect(() => {
-    fetchData();
-  }, [activeTab]);
-
-  const fetchData = async () => {
     setLoading(true);
-    try {
-      const q = query(collection(db, activeTab), orderBy("name", "asc"));
-      const querySnapshot = await getDocs(q);
-      setData(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
+    const q = query(collection(db, activeTab), orderBy("name", "asc"));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setData(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
-    }
-  };
+    }, (error) => {
+      console.error("Error fetching data:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [activeTab]);
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -97,7 +96,7 @@ const VendorRetailer = () => {
         await addDoc(collection(db, activeTab), formData);
       }
       setIsModalOpen(false);
-      fetchData();
+      // Real-time listener handles the state update
     } catch (error) {
       console.error("Error saving data:", error);
       alert("Error saving: " + error.message);
@@ -108,7 +107,7 @@ const VendorRetailer = () => {
     if (window.confirm(lang === 'en' ? "Are you sure?" : "நிச்சயமாக அழிக்க வேண்டுமா?")) {
       try {
         await deleteDoc(doc(db, activeTab, id));
-        fetchData();
+        // Real-time listener handles the state update
       } catch (error) {
         console.error("Error deleting:", error);
       }

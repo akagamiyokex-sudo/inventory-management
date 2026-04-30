@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, ShoppingBag, CreditCard, Calendar } from 'lucide-react';
 import { db } from '../firebase/config';
-import { collection, query, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, getDocs, orderBy, where, Timestamp } from "firebase/firestore";
 import { useLanguage } from '../context/LanguageContext';
 
 const VendorMonitor = () => {
@@ -16,8 +16,16 @@ const VendorMonitor = () => {
   const fetchStaffPerformance = async () => {
     setLoading(true);
     try {
-      // 1. Fetch all sales
-      const salesSnapshot = await getDocs(collection(db, "sales"));
+      // 1. Fetch sales from the last 30 days to keep it fast
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const q = query(
+        collection(db, "sales"), 
+        where("date", ">=", Timestamp.fromDate(thirtyDaysAgo))
+      );
+      
+      const salesSnapshot = await getDocs(q);
       const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       // 2. Group by staff_id

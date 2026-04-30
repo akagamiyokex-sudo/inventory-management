@@ -3,10 +3,12 @@ import {
   collection,
   doc, 
   setDoc, 
+  updateDoc,
   getDocs, 
   deleteDoc,
   query, 
   orderBy, 
+  onSnapshot,
   runTransaction,
   serverTimestamp 
 } from "firebase/firestore";
@@ -57,20 +59,54 @@ export const getProducts = async () => {
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
+/**
+ * Real-time listener for products
+ */
+export const subscribeProducts = (callback) => {
+  const q = query(collection(db, "products"), orderBy("priority", "asc"));
+  return onSnapshot(q, (snapshot) => {
+    const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(products);
+  }, (error) => {
+    console.error("Product subscription error:", error);
+  });
+};
+
 export const createProduct = async (data) => {
-  const docRef = await addDoc(collection(db, "products"), data);
+  // Ensure numeric fields are actually numbers
+  const cleanData = {
+    ...data,
+    price: Number(data.price) || 0,
+    stock: Number(data.stock) || 0,
+    category: Number(data.category) || 5,
+    priority: Number(data.priority) || 0,
+    updatedAt: serverTimestamp()
+  };
+  const docRef = await addDoc(collection(db, "products"), cleanData);
   return { id: docRef.id };
 };
 
 export const updateProduct = async (id, data) => {
-  // Ensure we don't try to update the ID field itself
-  const { id: _, ...cleanData } = data;
-  await setDoc(doc(db, "products", id), cleanData, { merge: true });
+  const { id: _, ...rest } = data;
+  
+  // Ensure numeric fields are actually numbers
+  const cleanData = {
+    ...rest,
+    price: Number(rest.price) || 0,
+    stock: Number(rest.stock) || 0,
+    category: Number(rest.category) || 5,
+    priority: Number(rest.priority) || 0,
+    updatedAt: serverTimestamp()
+  };
+
+  const productRef = doc(db, "products", id);
+  await updateDoc(productRef, cleanData);
 };
 
 export const deleteProduct = async (id) => {
   await deleteDoc(doc(db, "products", id));
 };
+
 
 // --- SALES OPERATIONS ---
 

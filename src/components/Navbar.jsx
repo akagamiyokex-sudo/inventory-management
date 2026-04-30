@@ -8,13 +8,15 @@ const Navbar = () => {
   const { user, role, logout } = useAuth();
   const { lang, toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
-  if (!user) return null;
+  const isLoginPage = location.pathname.toLowerCase().includes('/login');
+  if (!user || isLoginPage) return null;
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
