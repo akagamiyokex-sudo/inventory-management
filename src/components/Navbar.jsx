@@ -2,7 +2,7 @@ import React from 'react';
 import { LogOut, Globe, ShoppingCart, LayoutDashboard, Package, Users, Store, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const { user, role, logout } = useAuth();
