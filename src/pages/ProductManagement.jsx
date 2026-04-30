@@ -80,7 +80,7 @@ const ProductManagement = () => {
 
     setFormData(prev => ({ 
       ...prev, 
-      [name]: (name === 'price' || name === 'stock' || name === 'category' || name === 'priority') ? (value === '' ? '' : Number(value)) : value 
+      [name]: (name === 'price' || name === 'stock' || name === 'category' || name === 'priority') ? (value === '' ? '' : value) : value 
     }));
   };
 
@@ -162,7 +162,17 @@ const ProductManagement = () => {
         finalImageUrl = await getDownloadURL(snapshot.ref);
       }
 
-      const productData = { ...formData, image_url: finalImageUrl };
+      const productData = { 
+        ...formData, 
+        image_url: finalImageUrl,
+        // Ensure numbers are converted before sending to DB
+        price: parseFloat(formData.price) || 0,
+        stock: parseInt(formData.stock) || 0,
+        category: parseInt(formData.category) || 5,
+        priority: parseInt(formData.priority) || 0
+      };
+
+      console.log("Saving product data:", productData);
 
       if (editingProduct) {
         await updateProduct(editingProduct.id, productData);

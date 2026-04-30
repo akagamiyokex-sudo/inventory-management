@@ -87,20 +87,29 @@ export const createProduct = async (data) => {
 };
 
 export const updateProduct = async (id, data) => {
-  const { id: _, ...rest } = data;
+  // Remove id and updatedAt if present to handle clean update
+  const { id: _, updatedAt: __, ...rest } = data;
   
-  // Ensure numeric fields are actually numbers
+  // Explicitly sanitize all fields to ensure data integrity
   const cleanData = {
     ...rest,
-    price: Number(rest.price) || 0,
-    stock: Number(rest.stock) || 0,
-    category: Number(rest.category) || 5,
-    priority: Number(rest.priority) || 0,
+    name_en: String(rest.name_en ?? ''),
+    name_ta: String(rest.name_ta ?? ''),
+    image_url: String(rest.image_url ?? ''),
+    price: parseFloat(rest.price) || 0,
+    stock: parseInt(rest.stock) || 0,
+    category: parseInt(rest.category) || 5,
+    priority: parseInt(rest.priority) || 0,
     updatedAt: serverTimestamp()
   };
 
-  const productRef = doc(db, "products", id);
-  await updateDoc(productRef, cleanData);
+  try {
+    const productRef = doc(db, "products", id);
+    await setDoc(productRef, cleanData, { merge: true });
+  } catch (error) {
+    console.error("Firestore updateProduct error:", error);
+    throw error;
+  }
 };
 
 export const deleteProduct = async (id) => {
